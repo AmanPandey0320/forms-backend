@@ -18,4 +18,7 @@ export class User {
     @Column({nullable:true})
     password: string;
 
+    @Column({nullable:false,default:false})
+    isverified:boolean;
+
 }

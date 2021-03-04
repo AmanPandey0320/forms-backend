@@ -3,7 +3,8 @@ import * as dotenv from "dotenv";
 import * as bcrypt from 'bcrypt';
 import {nanoid} from 'nanoid';
 import {Connection, createConnection, Repository} from 'typeorm';
-import {User} from '../../entity/User'
+import {User} from '../../entity/User';
+
 dotenv.config();
 const saltRounds:number = parseInt(process.env.saltRounds);
 const jwt_key:string = process.env.jwt_key;
@@ -44,7 +45,7 @@ export const createHashPassword = async (password: string) : Promise<string> => 
     });
 }
 
-export const createUser = (email_id:string,password:string,google_token:string,user_id:string,name:string): Promise<boolean>=>{
+export const createUser = (email_id:string,password:string,google_token:string,user_id:string,name:string,isverified:boolean): Promise<boolean>=>{
 
     return new Promise<boolean>(async (resolve, reject) =>{
         const user:User = new User();
@@ -53,6 +54,7 @@ export const createUser = (email_id:string,password:string,google_token:string,u
         user.google_id = google_token;
         user.name = name;
         user.user_id = user_id;
+        user.isverified = isverified;
 
         createConnection().then( async (connection)=>{
 
@@ -153,7 +155,7 @@ export const emailSignin = (email:string,password:string) : Promise<Object>=>{
                 //no user existes with this email id 
                 code = 404,message='no such user exists with this email-id!',path='/signup';
                 return reject({code,message,path});
-            }else{
+            }else if(user.isverified){
                 //user exists with this email id
                 const isvalidCred = await bcrypt.compare(password,user.password);
 
@@ -172,6 +174,9 @@ export const emailSignin = (email:string,password:string) : Promise<Object>=>{
                     code = 401,message='Sign-in failed! either email or password is incorrect.',path='/signin';
                     return reject({code,message,path});
                 }
+            }else{
+                code=401,message='email not verified! Please verify your email first.';
+                return reject({code,message});
             }
             
 
@@ -230,6 +235,14 @@ export const googleSignin = (google_token:string,email :string):Promise<Object> 
             code = err.code,message = err.message,path='/error';
             return reject({code,message,path});
         }
+
+    });
+
+}
+
+export const resetAccnt = (email:string):Promise<Object> => {
+
+    return new Promise<Object>(async (resolve, reject) => {
 
     });
 

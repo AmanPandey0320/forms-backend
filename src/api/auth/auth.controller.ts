@@ -1,14 +1,23 @@
 import {nanoid} from 'nanoid';
 import { idText } from 'typescript';
-import {createHashPassword,createJwtToken,createUser,verifyJwtToken,emailSignin,googleSignin} from './auth.services';
+require('dotenv').config();
+import {createHashPassword,createJwtToken,createUser,verifyJwtToken,emailSignin,googleSignin,resetAccnt} from './auth.services';
+import {emailClient} from '../../config/email';
+import {Connection, createConnection, Repository} from 'typeorm';
+import {User} from '../../entity/User';
+
+const emailUrl = `http://localhost:${process.env.PORT}/api/auth/verification?uid=`;
 
 //signup controller
 export const signup = async (req, res) => {
     let {type,name,google_token,email,password} = req.body;
-    if(type === '00'){
+    let is_mail_verified = false;
+    if(type === '00'){ //sign through email and password
         name = 'New froms user';
         google_token = nanoid(64);
+        
     }else {
+        is_mail_verified = true;
         password = nanoid(10);
     }
     const id = nanoid(32);
@@ -17,7 +26,15 @@ export const signup = async (req, res) => {
         const hash = await createHashPassword(password);
         const google_token_hash = await createHashPassword(google_token);
         const token:string = await createJwtToken(email, google_token_hash);
-        const state = await createUser(email,hash,google_token_hash,id,name);
+        const state = await createUser(email,hash,google_token_hash,id,name,is_mail_verified);
+
+        // sand mail to the user
+
+        if(type === '00'){
+            const html = `<h1>Hi there!</h1><p>Verify your email to proceed further.</p><br><p>Click the link to proceed: <a href='${emailUrl+id}'>VERIFY ME</a></p>`
+            await emailClient(email,html);
+        }
+
         // console.log(state);
         res.send({id,token})
 
@@ -73,6 +90,41 @@ export const verify = async (req, res) => {
 
 //reset controller
 export const reset = async (req, res) => {
-    res.send('reset');
+    //TODO: set password reset for email sign in
+    res.send('response');
+}
+
+//email verification
+export const verification = async (req, res) => {
+
+    const id = req.query.uid;
+
+    try{
+
+        const connection :Connection = await createConnection();
+        const repository: Repository<User> =  await connection.getRepository(User);
+        const user:User = await repository.createQueryBuilder().select('users').from(User,'users').where('users.user_id = :id',{id}).getOne();
+        if(user.isverified){
+            res.status(200).json({
+                code:200,
+                message:'email is already verified'
+            });
+        }else{
+
+            await repository.createQueryBuilder().update(User).set({isverified:true}).where('user_id = :id',{id}).execute();
+            connection.close();
+
+            res.send('verification done from ' + req.query.uid);
+
+        }
+
+    }catch (err) {
+        console.log(err);
+        res.status(500).json({
+            code: err.code,
+            message: err.message
+        });
+    }
+
 }
 
