@@ -1,6 +1,8 @@
 import {nanoid} from 'nanoid';
 import { idText } from 'typescript';
 import {createHashPassword,createJwtToken,createUser,verifyJwtToken,emailSignin,googleSignin,resetAccnt} from './auth.services';
+import {updatePassword} from './auth.services';
+
 import {emailClient} from '../../config/email';
 import {Connection, createConnection, Repository} from 'typeorm';
 import {User} from '../../entity/User';
@@ -136,3 +138,33 @@ export const verification = async (req, res) => {
 
 }
 
+//update controller
+export const update = async (req,res) => {
+
+    const {oldemail,newemail,oldpassword,newpassword,oldname,newname,email,password,name} = req.body; 
+
+    if(oldemail && newemail && password){
+        res.status(200).json({code:200,message:'email updated'});
+    }
+
+    if(oldpassword && newpassword && email){
+
+        try{
+
+            const state = await updatePassword(oldpassword,newpassword,email);
+            res.status(200).json(state);
+
+        }catch(err){
+            if(err === '404')
+            res.status(404).json({code:404,message:'user not found'});
+            else if(err === '401')
+            res.status(401).json({code:401,message:'user unautheticated'});
+            else 
+            res.status(500).json({code:err.code,message:err.message})
+        }
+    }
+
+    if(oldname && newname && email && name){
+        res.status(200).json({code:200,message:'name updated'});
+    }
+}

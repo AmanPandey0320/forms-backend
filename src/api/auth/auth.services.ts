@@ -292,3 +292,51 @@ export const resetAccnt = (email:string):Promise<Object> => {
     });
 
 }
+
+//TODO: updates services
+
+export const updatePassword = async(oldPassword:string, newPassword:string,email:string):Promise<Object>=>{
+
+    return new Promise<Object>( async (resolve, reject) =>{
+
+        try{
+
+            const connection:Connection = await createConnection();
+            const repository: Repository<User> =  await connection.manager.getRepository(User);
+            const user: User = await repository.createQueryBuilder().select('users').from(User,'users').where("users.email_id = :email",{email}).getOne();
+
+            if(!user){
+                connection.close();
+                throw new Error('404');
+            }
+
+            const authstate :boolean = await bcrypt.compare(oldPassword,user.password);
+
+            if(authstate){
+                //user authenticated update password now
+                const hashPassword = await createHashPassword(newPassword);
+                await repository.createQueryBuilder().update(User).set({password:hashPassword}).where("users.user_id = :id",{id:user.user_id}).execute();
+                connection.close();
+                return resolve({code:200,message:'password updated successfully'});
+
+            }else{
+                connection.close();
+                throw new Error('401');
+            }
+
+        }catch(err){
+            console.log(err);
+            throw err;
+        }
+
+    });
+
+}
+
+export const updateName = async(oldName:string, newName:string)=>{
+
+}
+
+export const updateEmail = async (old_email: string, new_email: string)=>{
+
+}
