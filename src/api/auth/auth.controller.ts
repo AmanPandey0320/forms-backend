@@ -1,7 +1,7 @@
 import {nanoid} from 'nanoid';
 import { idText } from 'typescript';
 import {createHashPassword,createJwtToken,createUser,verifyJwtToken,emailSignin,googleSignin,resetAccnt} from './auth.services';
-import {updatePassword} from './auth.services';
+import {updatePassword,updateEmail,updateName} from './auth.services';
 
 import {emailClient} from '../../config/email';
 import {Connection, createConnection, Repository} from 'typeorm';
@@ -143,8 +143,18 @@ export const update = async (req,res) => {
 
     const {oldemail,newemail,oldpassword,newpassword,oldname,newname,email,password,name} = req.body; 
 
-    if(oldemail && newemail && password){
-        res.status(200).json({code:200,message:'email updated'});
+    if(oldemail && newemail){
+        
+        try {
+
+            const state = await updateEmail(oldemail,newemail);
+            res.status(200).json(state);
+
+        }catch (err) {
+
+            res.status(500).json({code: err.code,message: err.message});
+
+        }
     }
 
     if(oldpassword && newpassword && email){
@@ -155,16 +165,21 @@ export const update = async (req,res) => {
             res.status(200).json(state);
 
         }catch(err){
-            if(err === '404')
-            res.status(404).json({code:404,message:'user not found'});
-            else if(err === '401')
-            res.status(401).json({code:401,message:'user unautheticated'});
-            else 
             res.status(500).json({code:err.code,message:err.message})
         }
     }
 
-    if(oldname && newname && email && name){
-        res.status(200).json({code:200,message:'name updated'});
+    if(oldname && newname && email){
+        
+        try{
+
+            const state = await updateName(oldname,newname,email);
+            res.status(200).json(state);
+
+        }catch (err) {
+
+            res.status(500).json({code: err.code,message: err.message});
+
+        }
     }
 }

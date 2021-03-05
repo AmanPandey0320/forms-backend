@@ -256,7 +256,7 @@ export const resetAccnt = (email:string):Promise<Object> => {
 
             if(!user){
                 connection.close();
-                throw new Error('unauthorised access');
+                return reject({code:"401",message:"unauthorized access to accont"});
             }
 
             if(user.isverified){
@@ -307,7 +307,7 @@ export const updatePassword = async(oldPassword:string, newPassword:string,email
 
             if(!user){
                 connection.close();
-                throw new Error('404');
+                return reject({code:404,message:'user not found'});
             }
 
             const authstate :boolean = await bcrypt.compare(oldPassword,user.password);
@@ -333,10 +333,70 @@ export const updatePassword = async(oldPassword:string, newPassword:string,email
 
 }
 
-export const updateName = async(oldName:string, newName:string)=>{
+export const updateName = async(oldName:string, newName:string,email:string):Promise<any>=>{
+
+    return new Promise<any>(async(resolve, reject)=>{
+
+        try{
+
+            const connection:Connection = await createConnection();
+            const repository: Repository<User> =  await connection.manager.getRepository(User);
+            const user:User = await repository.createQueryBuilder().select('users').from(User,'users').where('users.email_id = :email',{email}).getOne();
+
+            if(!user){
+                connection.close();
+                return reject({code:'404',message:'user not found'});
+            }else{
+
+                // console.log(user);
+                
+                await repository.createQueryBuilder().update(User).set({name:newName}).where('users.user_id = :user_id',{user_id:user.user_id}).execute();
+
+                connection.close();
+                return resolve({code:200,message:'name changed successfully'});
+            }
+
+        }catch(err){
+            console.log(err);
+            return reject(err);
+            
+        }
+
+    });
 
 }
 
-export const updateEmail = async (old_email: string, new_email: string)=>{
+export const updateEmail = async (old_email: string, new_email: string):Promise<any> =>{
+
+    return new Promise<any>(async(resolve,reject) => {
+
+        try{
+
+            const connection = await createConnection();
+            const repository: Repository<User> =  await connection.manager.getRepository(User);
+            const user: User = await repository.createQueryBuilder().select('users').from(User,'users').where('users.email_id = :email',{email:new_email}).getOne();
+
+            const currentUser:User = await repository.createQueryBuilder().select('users').from(User,'users').where("users.email_id = :email",{email:old_email}).getOne();
+
+            if(user){
+                connection.close();
+                return reject({code:400, message:'user with email already exists'});
+            }
+
+            await repository.createQueryBuilder().update(User).set({email_id:new_email,isverified:false}).where("users.email_id = :id",{id:old_email}).execute();
+            const emailUrl = `http://localhost:${process.env.PORT}/api/auth/verification?uid=`;
+
+            const html = `<h1>Hi there!</h1><p>Verify your email to proceed further.</p><br><p>Click the link to proceed: <a href='${emailUrl+currentUser.user_id}'>VERIFY ME</a></p>`
+            await emailClient(new_email,html);
+
+            connection.close();
+            return resolve({code:200,message:'email updated successfully,check your inbox and please verify your email'});
+
+        }catch(err){
+            console.log(err);
+            throw err;
+        }
+
+    });
 
 }
