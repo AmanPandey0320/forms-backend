@@ -1,6 +1,5 @@
 import {nanoid} from 'nanoid';
 import { idText } from 'typescript';
-require('dotenv').config();
 import {createHashPassword,createJwtToken,createUser,verifyJwtToken,emailSignin,googleSignin,resetAccnt} from './auth.services';
 import {emailClient} from '../../config/email';
 import {Connection, createConnection, Repository} from 'typeorm';
@@ -66,7 +65,7 @@ export const signin = async (req, res) => {
     
 }
 
-//verify controller
+//verify jwt controller
 export const verify = async (req, res) => {
      const authKey = req.body.authKey;
      if(!authKey){
@@ -82,7 +81,10 @@ export const verify = async (req, res) => {
             res.status(200).json({verify_response,path:"/home"});
 
         }catch(err){
-            res.status(500).json(err);
+            res.status(500).json({
+                code: err.code,
+                message: err.message
+            });
         }
 
      }
@@ -90,8 +92,14 @@ export const verify = async (req, res) => {
 
 //reset controller
 export const reset = async (req, res) => {
-    //TODO: set password reset for email sign in
-    res.send('response');
+     try{
+
+        const state = await resetAccnt(req.body.email);
+        res.status(200).json(state);
+
+     }catch(err){
+         res.status(500).json({code: err.code,message: err.message});
+     }
 }
 
 //email verification

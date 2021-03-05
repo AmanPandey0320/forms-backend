@@ -4,6 +4,7 @@ import * as bcrypt from 'bcrypt';
 import {nanoid} from 'nanoid';
 import {Connection, createConnection, Repository} from 'typeorm';
 import {User} from '../../entity/User';
+import {emailClient} from '../../config/email';
 
 dotenv.config();
 const saltRounds:number = parseInt(process.env.saltRounds);
@@ -26,7 +27,6 @@ export const createJwtToken = async (email: string, google_token:string): Promis
 }
 
 export const createHashPassword = async (password: string) : Promise<string> => {
-    const temp_id = await nanoid(32);
 
     return new Promise<string>(async (resolve, reject) =>{
         
@@ -240,9 +240,54 @@ export const googleSignin = (google_token:string,email :string):Promise<Object> 
 
 }
 
+
 export const resetAccnt = (email:string):Promise<Object> => {
 
     return new Promise<Object>(async (resolve, reject) => {
+
+        try{
+
+            const connection:Connection = await createConnection();
+            const repository:Repository<User> = await connection.manager.getRepository(User);
+            const user:User = await repository.createQueryBuilder().select('users').from(User,"users").where('users.email_id = :email',{email}).getOne();
+
+            // console.log(user);
+            
+
+            if(!user){
+                connection.close();
+                throw new Error('unauthorised access');
+            }
+
+            if(user.isverified){
+                //send a new password to user
+                const newPassword = await nanoid(10);
+                const hashPassword = await createHashPassword(newPassword);
+                await repository.createQueryBuilder().update(User).set({password:hashPassword}).where('users.user_id = :user_id',{user_id:user.user_id}).execute();
+
+                const html = `<p>Hello ${user.name}</p><p>We have recieved a request to reset your password.</p><p>Your new password is as follows <strong>${newPassword}</strong></p>`;
+
+                await emailClient(email,html);
+                connection.close();
+                return resolve({code:200,message:'email sent! check your mailbox'});
+
+
+            }else{
+                //user not verified
+                const emailUrl = `http://localhost:${process.env.PORT}/api/auth/verification?uid=`;
+
+                const html = `<h1>Hi there!</h1><p>Verify your email to proceed further.</p><br><p>Click the link to proceed: <a href='${emailUrl+user.user_id}'>VERIFY ME</a></p>`
+                await emailClient(email,html);
+                connection.close();
+                return resolve({code:200,message:'first verify your email then only you can reset your password'});
+            }
+
+            connection.close();
+
+        }catch(err){
+            console.log(err);
+            return reject(err);
+        }
 
     });
 
