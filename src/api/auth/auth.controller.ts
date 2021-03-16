@@ -80,7 +80,7 @@ export const verify = async (req, res) => {
         try{
 
             const verify_response = await verifyJwtToken(authKey);
-            res.status(200).json({verify_response,path:"/home"});
+            res.status(200).json({verify_response});
 
         }catch(err){
             res.status(500).json({

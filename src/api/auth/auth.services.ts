@@ -88,6 +88,7 @@ export const verifyJwtToken = (jwt_token:string) : Promise<Object> =>{
         try{
             
             const decode:any = await jwt.verify(jwt_token,jwt_key);
+            
 
             // console.log(decode);
             
@@ -109,7 +110,8 @@ export const verifyJwtToken = (jwt_token:string) : Promise<Object> =>{
                 return resolve({
                     status:404,
                     message:"user not found!",
-                    user:{}
+                    user:{},
+                    path:"/signup"
                 })
             }else{
                 if(google_token === user.google_id){
@@ -118,21 +120,31 @@ export const verifyJwtToken = (jwt_token:string) : Promise<Object> =>{
                         status:200,
                         message:"Welcome!",
                         token:jwt_token_new,
-                        user: user
+                        user: user,
+                        path:"/home"
                     });
 
                 }else{
                     return resolve({
                         status:401,
                         message:"invalid user",
-                        user:{}
+                        user:{},path:"/signup"
                     });
                 }
             }
 
         }catch(err){
+            if(err.message === 'jwt expired'){
+                return resolve({
+                    status:401,
+                    message:"invalid user",
+                    user:{},path:"/signup"
+                });
+            }
+
             console.log(err);
             return reject(err);
+            
             
         }
     });
