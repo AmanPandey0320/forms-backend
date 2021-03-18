@@ -82,8 +82,8 @@ export const createUser = (email_id:string,password:string,google_token:string,u
 
 }
 
-export const verifyJwtToken = (jwt_token:string) : Promise<Object> =>{
-    return new Promise<Object> (async (resolve, reject) =>{
+export const verifyJwtToken = (jwt_token:string) : Promise<any> =>{
+    return new Promise<any> (async (resolve, reject) =>{
         
         try{
             
@@ -102,7 +102,7 @@ export const verifyJwtToken = (jwt_token:string) : Promise<Object> =>{
             
             // console.log(result);
 
-            connection.close();
+            await connection.close();
 
             const jwt_token_new = await createJwtToken(user.email_id,user.google_id);
             
