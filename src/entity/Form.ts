@@ -1,4 +1,4 @@
-import {Entity, PrimaryGeneratedColumn, Column} from "typeorm";
+import {Entity, PrimaryGeneratedColumn, Column, Timestamp} from "typeorm";
 
 @Entity({name:'form'})
 export class Form {
@@ -29,5 +29,8 @@ export class Form {
 
     @Column({nullable:true})
     description:string;
+
+    @Column({nullable:false})
+    created_at:Date;
 
 }

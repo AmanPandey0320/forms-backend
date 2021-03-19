@@ -119,10 +119,11 @@ export const verification = async (req, res) => {
                 code:200,
                 message:'email is already verified'
             });
+            await connection.close();
         }else{
 
             await repository.createQueryBuilder().update(User).set({isverified:true}).where('user_id = :id',{id}).execute();
-            connection.close();
+            await connection.close();
 
             res.send('verification done from ' + req.query.uid);
 

@@ -62,12 +62,12 @@ export const createUser = (email_id:string,password:string,google_token:string,u
 
                 const repository: Repository<User>=  await connection.manager.getRepository(User);
                 await repository.save(user);
-                connection.close();
+                await connection.close();
                 return  resolve(true);
                 
             } catch (err) {
                 console.log(err);
-                connection.close();
+                await connection.close();
                 return reject(err);
                 
             }
@@ -161,7 +161,7 @@ export const emailSignin = (email:string,password:string) : Promise<Object>=>{
             const connection = await createConnection();
             const repository: Repository<User> =  await connection.manager.getRepository(User);
             const user:User = await repository.createQueryBuilder().select('users').from(User,"users").where("users.email_id = :email_id",{email_id:email}).getOne();
-            connection.close();
+            await connection.close();
 
             if(!user){
                 //no user existes with this email id 
@@ -214,7 +214,7 @@ export const googleSignin = (google_token:string,email :string):Promise<Object> 
             const connection: Connection = await createConnection();
             const repository:Repository<User> =  await connection.getRepository(User);
             const user:User = await repository.createQueryBuilder().select('users').from(User,"users").where("users.email_id = :email_id",{email_id:email}).getOne()
-            connection.close();
+            await connection.close();
 
             if(!user){
                 //no such user exists
@@ -267,7 +267,7 @@ export const resetAccnt = (email:string):Promise<Object> => {
             
 
             if(!user){
-                connection.close();
+                await connection.close();
                 return reject({code:"401",message:"unauthorized access to accont"});
             }
 
@@ -280,7 +280,7 @@ export const resetAccnt = (email:string):Promise<Object> => {
                 const html = `<p>Hello ${user.name}</p><p>We have recieved a request to reset your password.</p><p>Your new password is as follows <strong>${newPassword}</strong></p>`;
 
                 await emailClient(email,html);
-                connection.close();
+                await connection.close();
                 return resolve({code:200,message:'email sent! check your mailbox'});
 
 
@@ -290,11 +290,11 @@ export const resetAccnt = (email:string):Promise<Object> => {
 
                 const html = `<h1>Hi there!</h1><p>Verify your email to proceed further.</p><br><p>Click the link to proceed: <a href='${emailUrl+user.user_id}'>VERIFY ME</a></p>`
                 await emailClient(email,html);
-                connection.close();
+                await connection.close();
                 return resolve({code:200,message:'first verify your email then only you can reset your password'});
             }
 
-            connection.close();
+            await connection.close();
 
         }catch(err){
             console.log(err);
@@ -318,7 +318,7 @@ export const updatePassword = async(oldPassword:string, newPassword:string,email
             const user: User = await repository.createQueryBuilder().select('users').from(User,'users').where("users.email_id = :email",{email}).getOne();
 
             if(!user){
-                connection.close();
+                await connection.close();
                 return reject({code:404,message:'user not found'});
             }
 
@@ -328,11 +328,11 @@ export const updatePassword = async(oldPassword:string, newPassword:string,email
                 //user authenticated update password now
                 const hashPassword = await createHashPassword(newPassword);
                 await repository.createQueryBuilder().update(User).set({password:hashPassword}).where("users.user_id = :id",{id:user.user_id}).execute();
-                connection.close();
+                await connection.close();
                 return resolve({code:200,message:'password updated successfully'});
 
             }else{
-                connection.close();
+                await connection.close();
                 throw new Error('401');
             }
 
@@ -356,7 +356,7 @@ export const updateName = async(oldName:string, newName:string,email:string):Pro
             const user:User = await repository.createQueryBuilder().select('users').from(User,'users').where('users.email_id = :email',{email}).getOne();
 
             if(!user){
-                connection.close();
+                await connection.close();
                 return reject({code:'404',message:'user not found'});
             }else{
 
@@ -364,7 +364,7 @@ export const updateName = async(oldName:string, newName:string,email:string):Pro
                 
                 await repository.createQueryBuilder().update(User).set({name:newName}).where('users.user_id = :user_id',{user_id:user.user_id}).execute();
 
-                connection.close();
+                await connection.close();
                 return resolve({code:200,message:'name changed successfully'});
             }
 
@@ -391,7 +391,7 @@ export const updateEmail = async (old_email: string, new_email: string):Promise<
             const currentUser:User = await repository.createQueryBuilder().select('users').from(User,'users').where("users.email_id = :email",{email:old_email}).getOne();
 
             if(user){
-                connection.close();
+                await connection.close();
                 return reject({code:400, message:'user with email already exists'});
             }
 
@@ -401,7 +401,7 @@ export const updateEmail = async (old_email: string, new_email: string):Promise<
             const html = `<h1>Hi there!</h1><p>Verify your email to proceed further.</p><br><p>Click the link to proceed: <a href='${emailUrl+currentUser.user_id}'>VERIFY ME</a></p>`
             await emailClient(new_email,html);
 
-            connection.close();
+            await connection.close();
             return resolve({code:200,message:'email updated successfully,check your inbox and please verify your email'});
 
         }catch(err){

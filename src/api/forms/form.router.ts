@@ -1,7 +1,9 @@
 import {Router} from 'express'
-import {createForm} from './form.controller'
+import {createForm,readForms,readForm} from './form.controller'
 const router:Router = Router();
 
 router.post('/create',createForm);
+router.post('/getall',readForms);
+router.post('/getone',readForm);
 
 export {router as forms}
