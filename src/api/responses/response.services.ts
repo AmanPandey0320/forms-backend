@@ -22,10 +22,9 @@ export const createResponse = async (token,data):Promise<any>=>{
                 res.edited_at = new Date();
                 res.submitted_at = new Date();
 
-                const connection:Connection = await createConnection();
+                
                 const repo :Repository<Response> = await  getRepository(Response);
                 const resState = await repo.save(res);
-                await connection.close();
 
                 return resolve({resState:resState,code:200});
 

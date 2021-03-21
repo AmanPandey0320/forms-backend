@@ -14,8 +14,8 @@ export const saveForm = async(formData):Promise<any>=>{
 
             if(authState.status === 200){
                 const {user_id} = authState.user;
-                const connection = await createConnection();
-                const repository:Repository<Form> = await connection.manager.getRepository(Form);
+                
+                const repository:Repository<Form> = await getRepository(Form);
                 const form = new Form();
 
                 form.user_id = user_id;
@@ -29,7 +29,6 @@ export const saveForm = async(formData):Promise<any>=>{
 
                 const saveData = await repository.save(form);
 
-                await connection.close();
 
                 return resolve({
                     status:200,
@@ -59,12 +58,11 @@ export const getFormbyUid = async(token:string):Promise<any> => {
 
                 const {user_id} = authState.user;
 
-                const conn = await createConnection();
-                const repo:Repository<Form> = await conn.manager.getRepository(Form);
+
+                const repo:Repository<Form> = await getRepository(Form);
 
                 const forms:Form[] = await repo.createQueryBuilder().select('forms').from(Form,'forms').where('forms.user_id = :user_id',{user_id}).orderBy('forms.created_at','DESC').getMany();
 
-                await conn.close();
 
                 return resolve(forms);
 
@@ -91,11 +89,9 @@ export const getOne = async (form_id:string,token:string):Promise<any>=>{
             const authState = await verifyJwtToken(token);
             if(authState.status === 200){
 
-                const conn:Connection = await createConnection();
                 const repo:Repository<Form> = await getRepository(Form);
                 const form:Form = await repo.createQueryBuilder().select('forms').from(Form,'forms').where('forms.form_id = :form_id',{form_id}).getOne();
 
-                await conn.close();
 
                 return resolve({
                     code:200,

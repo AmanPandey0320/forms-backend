@@ -4,7 +4,7 @@ import {createHashPassword,createJwtToken,createUser,verifyJwtToken,emailSignin,
 import {updatePassword,updateEmail,updateName} from './auth.services';
 
 import {emailClient} from '../../config/email';
-import {Connection, createConnection, Repository} from 'typeorm';
+import {Connection, getRepository, Repository} from 'typeorm';
 import {User} from '../../entity/User';
 
 const emailUrl = `http://localhost:${process.env.PORT}/api/auth/verification?uid=`;
@@ -111,19 +111,16 @@ export const verification = async (req, res) => {
 
     try{
 
-        const connection :Connection = await createConnection();
-        const repository: Repository<User> =  await connection.getRepository(User);
+        const repository: Repository<User> =  await getRepository(User);
         const user:User = await repository.createQueryBuilder().select('users').from(User,'users').where('users.user_id = :id',{id}).getOne();
         if(user.isverified){
             res.status(200).json({
                 code:200,
                 message:'email is already verified'
             });
-            await connection.close();
         }else{
 
             await repository.createQueryBuilder().update(User).set({isverified:true}).where('user_id = :id',{id}).execute();
-            await connection.close();
 
             res.send('verification done from ' + req.query.uid);
 

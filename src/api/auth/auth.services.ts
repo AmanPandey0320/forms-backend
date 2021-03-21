@@ -2,7 +2,7 @@ import * as jwt from 'jsonwebtoken';
 import * as dotenv from "dotenv";
 import * as bcrypt from 'bcrypt';
 import {nanoid} from 'nanoid';
-import {Connection, createConnection, Repository} from 'typeorm';
+import {Connection, createConnection,getRepository, Repository} from 'typeorm';
 import {User} from '../../entity/User';
 import {emailClient} from '../../config/email';
 
@@ -56,28 +56,20 @@ export const createUser = (email_id:string,password:string,google_token:string,u
         user.user_id = user_id;
         user.isverified = isverified;
 
-        createConnection().then( async (connection)=>{
 
             try {
 
-                const repository: Repository<User>=  await connection.manager.getRepository(User);
+                const repository: Repository<User>=  await getRepository(User);
                 await repository.save(user);
-                await connection.close();
                 return  resolve(true);
                 
             } catch (err) {
                 console.log(err);
-                await connection.close();
                 return reject(err);
                 
             }
             
-        }).catch(err=>{
-
-            console.log(err);
-            return reject(err);
-
-        });
+        
     })
 
 }
@@ -95,14 +87,12 @@ export const verifyJwtToken = (jwt_token:string) : Promise<any> =>{
             
             const {email, google_token} = decode;
 
-            const connection:Connection = await createConnection();
-            const  repository: Repository<User> = await connection.manager.getRepository(User);
+            const  repository: Repository<User> = await getRepository(User);
 
             const user:User = await repository.createQueryBuilder().select("users").from(User,"users").where("users.email_id = :email_id",{email_id:email}).getOne();
             
             // console.log(result);
 
-            await connection.close();
 
             const jwt_token_new = await createJwtToken(user.email_id,user.google_id);
             
@@ -158,10 +148,8 @@ export const emailSignin = (email:string,password:string) : Promise<Object>=>{
 
         try{
 
-            const connection = await createConnection();
-            const repository: Repository<User> =  await connection.manager.getRepository(User);
+            const repository: Repository<User> =  await getRepository(User);
             const user:User = await repository.createQueryBuilder().select('users').from(User,"users").where("users.email_id = :email_id",{email_id:email}).getOne();
-            await connection.close();
 
             if(!user){
                 //no user existes with this email id 
@@ -211,10 +199,8 @@ export const googleSignin = (google_token:string,email :string):Promise<Object> 
 
         try{
 
-            const connection: Connection = await createConnection();
-            const repository:Repository<User> =  await connection.getRepository(User);
+            const repository:Repository<User> =  await getRepository(User);
             const user:User = await repository.createQueryBuilder().select('users').from(User,"users").where("users.email_id = :email_id",{email_id:email}).getOne()
-            await connection.close();
 
             if(!user){
                 //no such user exists
@@ -259,15 +245,13 @@ export const resetAccnt = (email:string):Promise<Object> => {
 
         try{
 
-            const connection:Connection = await createConnection();
-            const repository:Repository<User> = await connection.manager.getRepository(User);
+            const repository:Repository<User> = await getRepository(User);
             const user:User = await repository.createQueryBuilder().select('users').from(User,"users").where('users.email_id = :email',{email}).getOne();
 
             // console.log(user);
             
 
             if(!user){
-                await connection.close();
                 return reject({code:"401",message:"unauthorized access to accont"});
             }
 
@@ -280,7 +264,6 @@ export const resetAccnt = (email:string):Promise<Object> => {
                 const html = `<p>Hello ${user.name}</p><p>We have recieved a request to reset your password.</p><p>Your new password is as follows <strong>${newPassword}</strong></p>`;
 
                 await emailClient(email,html);
-                await connection.close();
                 return resolve({code:200,message:'email sent! check your mailbox'});
 
 
@@ -290,11 +273,8 @@ export const resetAccnt = (email:string):Promise<Object> => {
 
                 const html = `<h1>Hi there!</h1><p>Verify your email to proceed further.</p><br><p>Click the link to proceed: <a href='${emailUrl+user.user_id}'>VERIFY ME</a></p>`
                 await emailClient(email,html);
-                await connection.close();
                 return resolve({code:200,message:'first verify your email then only you can reset your password'});
             }
-
-            await connection.close();
 
         }catch(err){
             console.log(err);
@@ -313,12 +293,11 @@ export const updatePassword = async(oldPassword:string, newPassword:string,email
 
         try{
 
-            const connection:Connection = await createConnection();
-            const repository: Repository<User> =  await connection.manager.getRepository(User);
+            const repository: Repository<User> =  await getRepository(User);
             const user: User = await repository.createQueryBuilder().select('users').from(User,'users').where("users.email_id = :email",{email}).getOne();
 
             if(!user){
-                await connection.close();
+
                 return reject({code:404,message:'user not found'});
             }
 
@@ -328,11 +307,11 @@ export const updatePassword = async(oldPassword:string, newPassword:string,email
                 //user authenticated update password now
                 const hashPassword = await createHashPassword(newPassword);
                 await repository.createQueryBuilder().update(User).set({password:hashPassword}).where("users.user_id = :id",{id:user.user_id}).execute();
-                await connection.close();
+                
                 return resolve({code:200,message:'password updated successfully'});
 
             }else{
-                await connection.close();
+                
                 throw new Error('401');
             }
 
@@ -351,12 +330,12 @@ export const updateName = async(oldName:string, newName:string,email:string):Pro
 
         try{
 
-            const connection:Connection = await createConnection();
-            const repository: Repository<User> =  await connection.manager.getRepository(User);
+        
+            const repository: Repository<User> =  await getRepository(User);
             const user:User = await repository.createQueryBuilder().select('users').from(User,'users').where('users.email_id = :email',{email}).getOne();
 
             if(!user){
-                await connection.close();
+                
                 return reject({code:'404',message:'user not found'});
             }else{
 
@@ -364,7 +343,7 @@ export const updateName = async(oldName:string, newName:string,email:string):Pro
                 
                 await repository.createQueryBuilder().update(User).set({name:newName}).where('users.user_id = :user_id',{user_id:user.user_id}).execute();
 
-                await connection.close();
+            
                 return resolve({code:200,message:'name changed successfully'});
             }
 
@@ -384,14 +363,14 @@ export const updateEmail = async (old_email: string, new_email: string):Promise<
 
         try{
 
-            const connection = await createConnection();
-            const repository: Repository<User> =  await connection.manager.getRepository(User);
+            
+            const repository: Repository<User> =  await getRepository(User);
             const user: User = await repository.createQueryBuilder().select('users').from(User,'users').where('users.email_id = :email',{email:new_email}).getOne();
 
             const currentUser:User = await repository.createQueryBuilder().select('users').from(User,'users').where("users.email_id = :email",{email:old_email}).getOne();
 
             if(user){
-                await connection.close();
+                
                 return reject({code:400, message:'user with email already exists'});
             }
 
@@ -401,7 +380,6 @@ export const updateEmail = async (old_email: string, new_email: string):Promise<
             const html = `<h1>Hi there!</h1><p>Verify your email to proceed further.</p><br><p>Click the link to proceed: <a href='${emailUrl+currentUser.user_id}'>VERIFY ME</a></p>`
             await emailClient(new_email,html);
 
-            await connection.close();
             return resolve({code:200,message:'email updated successfully,check your inbox and please verify your email'});
 
         }catch(err){
