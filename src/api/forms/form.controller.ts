@@ -1,4 +1,4 @@
-import {saveForm,getFormbyUid,getOne} from './form.services';
+import {saveForm,getFormbyUid,getOne, editform} from './form.services';
 
 export const createForm = async (req,res)=>{
     // console.log(JSON.stringify(req.body.authKey));
@@ -47,4 +47,23 @@ export const readForm = async (req,res)=>{
         res.status(500).json(err);
     }
 
+}
+
+export const editForm = async (req,res)=>{
+    const {authKey,form_id,data} = req.body;
+    
+    try{
+
+        const editState = await editform(form_id,authKey,data);
+        if(editState.code === 200){
+            //edit done
+            res.json(editState);
+
+        }else{
+            res.status(editState.code).json(editState);
+        }
+
+    }catch(err){
+        res.status(500).json(err);
+    }
 }

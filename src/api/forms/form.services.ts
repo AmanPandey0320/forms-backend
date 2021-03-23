@@ -14,13 +14,13 @@ export const saveForm = async(formData):Promise<any>=>{
 
             if(authState.status === 200){
                 const {user_id} = authState.user;
-                
+
                 const repository:Repository<Form> = await getRepository(Form);
                 const form = new Form();
 
                 form.user_id = user_id;
                 // console.log(data);
-                
+
                 form.data = JSON.stringify(data);
                 form.title = title;
                 form.description = desc;
@@ -32,7 +32,7 @@ export const saveForm = async(formData):Promise<any>=>{
 
                 return resolve({
                     status:200,
-                    saveData:saveData                    
+                    saveData:saveData
                 });
 
             }else{
@@ -76,7 +76,7 @@ export const getFormbyUid = async(token:string):Promise<any> => {
         }catch(err){
             console.log(err);
             return reject(err);
-            
+
         }
     });
 }
@@ -110,4 +110,30 @@ export const getOne = async (form_id:string,token:string):Promise<any>=>{
             return reject(err);
         }
     });
+}
+
+export const editform = async (form_id:string,token:string,data:any):Promise<any> => {
+  return new Promise<any>( async (resolve,reject) => {
+    try{
+
+      const authState = await verifyJwtToken(token);
+      if(authState.status === 200){
+
+        //valide user continue with updating
+        const repo:Repository<Form> = await getRepository(Form);
+        const updated_at:Date = new Date();
+        await repo.createQueryBuilder().update(Form).set({data:JSON.stringify(data),created_at:updated_at}).where('form.form_id = :form_id',{form_id}).execute();
+
+        return resolve({code:200,message:'Form updated!'});
+
+      }else{
+        return reject({code:401,reason:'The current session is either invalid or has expired!'})
+      }
+
+    }catch(err){
+      console.log(err);
+      return reject(err);
+
+    }
+  });
 }
