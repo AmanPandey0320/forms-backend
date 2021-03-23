@@ -18,15 +18,6 @@ const corsOptions = {
     credentials:true
 }
 
-try{
-
-    createConnection();
-
-}catch(err){
-    console.log(err);
-    
-}
-
 app.use(async function(req, res, next) {
     res.header('Access-Control-Allow-Origin','http://localhost:3000' );
     res.header('Access-Control-Allow-Credentials','true');
@@ -40,8 +31,15 @@ app.use(cookieparser());
 app.use(express.json());
 app.use('/api',api);
 
-
-server.listen(port,()=>{
-    console.log('server listening on port :'+port);
+createConnection().then(conn=>{
+    server.listen(port,()=>{
+        console.log('server listening on port :'+port);
+        
+    });
+}).catch(err=>{
+    console.log('can not start server : db not connected');
     
-});
+    console.log(err);
+})
+
+
