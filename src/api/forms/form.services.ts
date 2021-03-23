@@ -112,7 +112,7 @@ export const getOne = async (form_id:string,token:string):Promise<any>=>{
     });
 }
 
-export const editform = async (form_id:string,token:string,data:any):Promise<any> => {
+export const editform = async (form_id:string,token:string,data:any,title:string,description:string):Promise<any> => {
   return new Promise<any>( async (resolve,reject) => {
     try{
 
@@ -122,7 +122,7 @@ export const editform = async (form_id:string,token:string,data:any):Promise<any
         //valide user continue with updating
         const repo:Repository<Form> = await getRepository(Form);
         const updated_at:Date = new Date();
-        await repo.createQueryBuilder().update(Form).set({data:JSON.stringify(data),created_at:updated_at}).where('form.form_id = :form_id',{form_id}).execute();
+        await repo.createQueryBuilder().update(Form).set({data:JSON.stringify(data),created_at:updated_at,title:title,description:description}).where('form.form_id = :form_id',{form_id}).execute();
 
         return resolve({code:200,message:'Form updated!'});
 

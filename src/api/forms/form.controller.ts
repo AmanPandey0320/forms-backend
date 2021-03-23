@@ -50,11 +50,11 @@ export const readForm = async (req,res)=>{
 }
 
 export const editForm = async (req,res)=>{
-    const {authKey,form_id,data} = req.body;
-    
+    const {authKey,form_id,data,title,description} = req.body;
+
     try{
 
-        const editState = await editform(form_id,authKey,data);
+        const editState = await editform(form_id,authKey,data,title,description);
         if(editState.code === 200){
             //edit done
             res.json(editState);
